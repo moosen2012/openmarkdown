@@ -41,6 +41,27 @@ function App() {
     const [fileName, setFileName] = useState<string>('');
     const [currentFilePath, setCurrentFilePath] = useState<string>('');
     const [sidebarExpanded, setSidebarExpanded] = useState<boolean>(true);
+    const [sourceCodeMode, setSourceCodeMode] = useState<boolean>(false);
+    const [wordCount, setWordCount] = useState<number>(0);
+
+    // 计算字数
+    useEffect(() => {
+        // 移除代码块和 HTML 标签，统计纯文字字数
+        const text = markdown
+            .replace(/```[\s\S]*?```/g, '')  // 移除代码块
+            .replace(/`[^`]+`/g, '')          // 移除行内代码
+            .replace(/!\[([^\]]*)\]\([^)]+\)/g, '$1')  // 处理图片
+            .replace(/\[([^\]]*)\]\([^)]+\)/g, '$1')   // 处理链接
+            .replace(/[#*_~>]/g, '')          // 移除 Markdown 符号
+            .trim();
+        
+        // 中文字符和英文单词都算作字数
+        const chineseChars = (text.match(/[\u4e00-\u9fa5]/g) || []).length;
+        const englishWords = (text.match(/[a-zA-Z]+/g) || []).length;
+        const numbers = (text.match(/[0-9]+/g) || []).length;
+        
+        setWordCount(chineseChars + englishWords + numbers);
+    }, [markdown]);
 
     // 检查 runtime 是否可用
     useState(() => {
@@ -185,12 +206,42 @@ function App() {
                     onFileSelect={handleSidebarFileSelect}
                 />
                 
-                <main className="main-content">
-                    <div 
-                        className="markdown-body"
-                        dangerouslySetInnerHTML={{ __html: renderMarkdown(markdown) }}
-                    />
-                </main>
+                <div className="main-wrapper">
+                    <main className="main-content">
+                        {sourceCodeMode ? (
+                            <div className="source-code-container">
+                                <textarea
+                                    className="source-code-textarea"
+                                    value={markdown}
+                                    onChange={(e) => setMarkdown(e.target.value)}
+                                    spellCheck={false}
+                                />
+                            </div>
+                        ) : (
+                            <div 
+                                className="markdown-body"
+                                dangerouslySetInnerHTML={{ __html: renderMarkdown(markdown) }}
+                            />
+                        )}
+                    </main>
+                    
+                    <footer className="status-bar">
+                        <div className="status-bar-left">
+                            <button 
+                                className={`status-bar-btn ${sourceCodeMode ? 'active' : ''}`}
+                                onClick={() => setSourceCodeMode(!sourceCodeMode)}
+                                title="切换源码模式"
+                            >
+                                <i className="bi bi-code-slash"></i> 源码模式
+                            </button>
+                        </div>
+                        <div className="status-bar-right">
+                            <span className="status-bar-item">
+                                <i className="bi bi-file-text"></i> 字数：{wordCount}
+                            </span>
+                        </div>
+                    </footer>
+                </div>
             </div>
         </div>
     );
