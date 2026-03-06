@@ -111,7 +111,12 @@ function App() {
         const codeBlocks: string[] = [];
         let html = text.replace(/```(\w*)\n([\s\S]*?)```/gim, (match, lang, code) => {
             const language = lang || 'plaintext';
-            const highlighted = hljs.highlight(code.trim(), { language }).value;
+            // 转义 HTML 特殊字符
+            const escapedCode = code
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;');
+            const highlighted = hljs.highlight(escapedCode.trim(), { language }).value;
             const placeholder = `__CODE_BLOCK_${codeBlocks.length}__`;
             codeBlocks.push(`<pre><code class="hljs language-${language}">${highlighted}</code></pre>`);
             return placeholder;
@@ -155,13 +160,29 @@ function App() {
         // 换行（代码块内的换行已经被保留）
         html = html.replace(/\n/gim, '<br>');
 
-        // 恢复代码块
+        // 恢复代码块（代码块内的换行需要特殊处理）
         codeBlocks.forEach((block, index) => {
-            html = html.replace(`__CODE_BLOCK_${index}__`, block);
+            // 恢复代码块时，移除代码块内的 <br>，保留原始换行
+            const cleanBlock = block.replace(/<br>/gim, '\n');
+            html = html.replace(`__CODE_BLOCK_${index}__`, cleanBlock);
         });
 
         return html;
     };
+
+    // 在内容渲染后初始化代码高亮
+    useEffect(() => {
+        const highlightCode = () => {
+            const codeBlocks = document.querySelectorAll('.markdown-body pre code');
+            codeBlocks.forEach((block) => {
+                hljs.highlightElement(block as HTMLElement);
+            });
+        };
+
+        // 延迟执行，确保 DOM 已经渲染
+        const timer = setTimeout(highlightCode, 0);
+        return () => clearTimeout(timer);
+    }, [markdown, sourceCodeMode]);
 
     return (
         <div className="container-fluid">
