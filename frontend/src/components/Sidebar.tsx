@@ -85,13 +85,13 @@ const Sidebar: React.FC<SidebarProps> = ({
           className={`sidebar-tab ${activeTab === 'outline' ? 'active' : ''}`}
           onClick={() => setActiveTab('outline')}
         >
-          📑 大纲
+          <i className="bi bi-list-ul"></i> 大纲
         </button>
         <button
           className={`sidebar-tab ${activeTab === 'files' ? 'active' : ''}`}
           onClick={() => setActiveTab('files')}
         >
-          📁 文件
+          <i className="bi bi-folder"></i> 文件
         </button>
       </div>
       

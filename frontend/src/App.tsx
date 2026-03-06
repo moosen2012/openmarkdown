@@ -143,7 +143,7 @@ function App() {
     };
 
     return (
-        <div className="container">
+        <div className="container-fluid">
             <header className="header">
                 <div className="header-left">
                     <button 
@@ -151,7 +151,7 @@ function App() {
                         onClick={() => setSidebarExpanded(!sidebarExpanded)}
                         title={sidebarExpanded ? '收起侧边栏' : '展开侧边栏'}
                     >
-                        {sidebarExpanded ? '◀' : '▶'}
+                        <i className={sidebarExpanded ? "bi bi-chevron-left" : "bi bi-chevron-right"}></i>
                     </button>
                     <h1>Markdown Reader</h1>
                     <div className="file-input-wrapper">
@@ -159,7 +159,7 @@ function App() {
                             className="file-input-label"
                             onClick={handleSelectFile}
                         >
-                            📁 选择文件
+                            <i className="bi bi-folder2-open"></i> 选择文件
                         </button>
                         <span className="file-name">{fileName || '未选择文件'}</span>
                     </div>

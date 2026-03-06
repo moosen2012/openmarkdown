@@ -40,7 +40,7 @@ const FileTree: React.FC<FileTreeProps> = ({ files, currentFile, searchQuery = '
   return (
     <div className="file-tree">
       <div className="file-tree-header">
-        📂 目录文件
+        <i className="bi bi-folder2-open"></i> 目录文件
       </div>
       <ul className="file-list">
         {files.map((file, index) => (
@@ -50,7 +50,9 @@ const FileTree: React.FC<FileTreeProps> = ({ files, currentFile, searchQuery = '
             onClick={() => onFileSelect(file.path)}
             title={file.path}
           >
-            <span className="file-icon">📄</span>
+            <span className="file-icon">
+              <i className={file.isDir ? "bi bi-folder" : "bi bi-file-earmark-text"}></i>
+            </span>
             <span className="file-name">
               {highlightText(file.name, searchQuery)}
             </span>

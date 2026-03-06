@@ -39,7 +39,7 @@ const OutlineTree: React.FC<OutlineTreeProps> = ({ outline, searchQuery = '', on
   return (
     <div className="outline-tree">
       <div className="outline-tree-header">
-        📑 文章大纲
+        <i className="bi bi-list-ul"></i> 文章大纲
       </div>
       <ul className="outline-list">
         {outline.map((item, index) => (
@@ -51,7 +51,7 @@ const OutlineTree: React.FC<OutlineTreeProps> = ({ outline, searchQuery = '', on
             title={item.title}
           >
             <span className="outline-marker">
-              {item.level === 1 ? '📘' : item.level === 2 ? '📗' : '📙'}
+              <i className={item.level === 1 ? "bi bi-book" : item.level === 2 ? "bi bi-journal-text" : "bi bi-file-text"}></i>
             </span>
             <span className="outline-title">
               {highlightText(item.title, searchQuery)}
