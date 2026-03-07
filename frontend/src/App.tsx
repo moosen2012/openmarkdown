@@ -1,9 +1,9 @@
 import { useState, useEffect } from 'react';
 import { SelectFile, ReadFile } from '../wailsjs/go/main/App';
 import './App.css';
-import hljs from 'highlight.js';
 import 'highlight.js/styles/github.css';
 import Sidebar from './components/Sidebar';
+import MarkdownRenderer from './components/MarkdownRenderer';
 
 // Wails 运行时函数
 const WindowMinimise = () => {
@@ -54,12 +54,12 @@ function App() {
             .replace(/\[([^\]]*)\]\([^)]+\)/g, '$1')   // 处理链接
             .replace(/[#*_~>]/g, '')          // 移除 Markdown 符号
             .trim();
-        
+
         // 中文字符和英文单词都算作字数
         const chineseChars = (text.match(/[\u4e00-\u9fa5]/g) || []).length;
         const englishWords = (text.match(/[a-zA-Z]+/g) || []).length;
         const numbers = (text.match(/[0-9]+/g) || []).length;
-        
+
         setWordCount(chineseChars + englishWords + numbers);
     }, [markdown]);
 
@@ -105,90 +105,11 @@ function App() {
         }
     };
 
-    // 简单的 Markdown 渲染（使用 highlight.js 进行代码高亮）
-    const renderMarkdown = (text: string) => {
-        // 使用占位符来保护代码块不被其他规则干扰
-        const codeBlocks: string[] = [];
-        let html = text.replace(/```(\w*)\n([\s\S]*?)```/gim, (match, lang, code) => {
-            const language = lang || 'plaintext';
-            // 转义 HTML 特殊字符
-            const escapedCode = code
-                .replace(/&/g, '&amp;')
-                .replace(/</g, '&lt;')
-                .replace(/>/g, '&gt;');
-            const highlighted = hljs.highlight(escapedCode.trim(), { language }).value;
-            const placeholder = `__CODE_BLOCK_${codeBlocks.length}__`;
-            codeBlocks.push(`<pre><code class="hljs language-${language}">${highlighted}</code></pre>`);
-            return placeholder;
-        });
-
-        // 处理行内代码（在代码块之后处理）
-        html = html.replace(/`([^`]+)`/gim, '<code>$1</code>');
-
-        // 生成标题 ID 的辅助函数（与后端 Go 逻辑保持一致）
-        const generateId = (title: string) => {
-            return title
-                .toLowerCase()
-                .replace(/\s+/g, '-')  // 空格替换为短横线
-                .replace(/[^\w\-]/g, ''); // 移除特殊字符
-        };
-
-        // 处理其他 Markdown 语法
-        html = html
-            // 标题（添加 id 属性）
-            .replace(/^### (.*$)/gim, (match, title) => {
-                const id = generateId(title.trim());
-                return `<h3 id="${id}">${title}</h3>`;
-            })
-            .replace(/^## (.*$)/gim, (match, title) => {
-                const id = generateId(title.trim());
-                return `<h2 id="${id}">${title}</h2>`;
-            })
-            .replace(/^# (.*$)/gim, (match, title) => {
-                const id = generateId(title.trim());
-                return `<h1 id="${id}">${title}</h1>`;
-            })
-            // 粗体
-            .replace(/\*\*(.*)\*\*/gim, '<strong>$1</strong>')
-            // 斜体
-            .replace(/\*(.*)\*/gim, '<em>$1</em>')
-            // 链接
-            .replace(/\[([^\]]+)\]\(([^)]+)\)/gim, '<a href="$2" target="_blank">$1</a>')
-            // 列表
-            .replace(/^\- (.*$)/gim, '<li>$1</li>');
-
-        // 换行（代码块内的换行已经被保留）
-        html = html.replace(/\n/gim, '<br>');
-
-        // 恢复代码块（代码块内的换行需要特殊处理）
-        codeBlocks.forEach((block, index) => {
-            // 恢复代码块时，移除代码块内的 <br>，保留原始换行
-            const cleanBlock = block.replace(/<br>/gim, '\n');
-            html = html.replace(`__CODE_BLOCK_${index}__`, cleanBlock);
-        });
-
-        return html;
-    };
-
-    // 在内容渲染后初始化代码高亮
-    useEffect(() => {
-        const highlightCode = () => {
-            const codeBlocks = document.querySelectorAll('.markdown-body pre code');
-            codeBlocks.forEach((block) => {
-                hljs.highlightElement(block as HTMLElement);
-            });
-        };
-
-        // 延迟执行，确保 DOM 已经渲染
-        const timer = setTimeout(highlightCode, 0);
-        return () => clearTimeout(timer);
-    }, [markdown, sourceCodeMode]);
-
     return (
         <div className="container-fluid">
             <header className="header">
                 <div className="header-left">
-                    <button 
+                    <button
                         className="toggle-sidebar-btn"
                         onClick={() => setSidebarExpanded(!sidebarExpanded)}
                         title={sidebarExpanded ? '收起侧边栏' : '展开侧边栏'}
@@ -197,7 +118,7 @@ function App() {
                     </button>
                     <h1>Markdown Reader</h1>
                     <div className="file-input-wrapper">
-                        <button 
+                        <button
                             className="file-input-label"
                             onClick={handleSelectFile}
                         >
@@ -218,15 +139,15 @@ function App() {
                     </button>
                 </div>
             </header>
-            
+
             <div className="main-container">
-                <Sidebar 
+                <Sidebar
                     expanded={sidebarExpanded}
                     currentFilePath={currentFilePath}
                     markdownContent={markdown}
                     onFileSelect={handleSidebarFileSelect}
                 />
-                
+
                 <div className="main-wrapper">
                     <main className="main-content">
                         {sourceCodeMode ? (
@@ -239,16 +160,13 @@ function App() {
                                 />
                             </div>
                         ) : (
-                            <div 
-                                className="markdown-body"
-                                dangerouslySetInnerHTML={{ __html: renderMarkdown(markdown) }}
-                            />
+                            <MarkdownRenderer content={markdown} />
                         )}
                     </main>
-                    
+
                     <footer className="status-bar">
                         <div className="status-bar-left">
-                            <button 
+                            <button
                                 className={`status-bar-btn ${sourceCodeMode ? 'active' : ''}`}
                                 onClick={() => setSourceCodeMode(!sourceCodeMode)}
                                 title="切换源码模式"
