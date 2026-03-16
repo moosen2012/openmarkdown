@@ -4,6 +4,8 @@ import {main} from '../models';
 
 export function ListMarkdownFiles(arg1:string):Promise<Array<main.FileInfo>>;
 
+export function ParseMarkdown(arg1:string):Promise<string>;
+
 export function ParseOutline(arg1:string):Promise<Array<main.OutlineItem>>;
 
 export function ReadFile(arg1:string):Promise<string>;

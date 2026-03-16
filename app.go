@@ -1,12 +1,17 @@
 package main
 
 import (
+	"bytes"
 	"context"
 	"os"
 	"path/filepath"
 	"regexp"
 	"strings"
 
+	"github.com/yuin/goldmark"
+	"github.com/yuin/goldmark/extension"
+	"github.com/yuin/goldmark/parser"
+	"github.com/yuin/goldmark/renderer/html"
 	"github.com/wailsapp/wails/v2/pkg/runtime"
 )
 
@@ -27,11 +32,26 @@ type OutlineItem struct {
 // App struct
 type App struct {
 	ctx context.Context
+	md  goldmark.Markdown
 }
 
 // NewApp creates a new App application struct
 func NewApp() *App {
-	return &App{}
+	// 创建 goldmark 解析器，启用 GFM 扩展
+	md := goldmark.New(
+		goldmark.WithExtensions(extension.GFM),
+		goldmark.WithParserOptions(
+			parser.WithAutoHeadingID(),
+		),
+		goldmark.WithRendererOptions(
+			html.WithHardWraps(),
+			html.WithXHTML(),
+		),
+	)
+
+	return &App{
+		md: md,
+	}
 }
 
 // startup is called when the app starts. The context is saved
@@ -147,4 +167,13 @@ func (a *App) ParseOutline(content string) []OutlineItem {
 	}
 
 	return outline
+}
+
+// ParseMarkdown 使用 goldmark 解析 Markdown 内容并返回 HTML
+func (a *App) ParseMarkdown(content string) (string, error) {
+	var buf bytes.Buffer
+	if err := a.md.Convert([]byte(content), &buf); err != nil {
+		return "", err
+	}
+	return buf.String(), nil
 }

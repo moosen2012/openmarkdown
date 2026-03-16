@@ -6,6 +6,10 @@ export function ListMarkdownFiles(arg1) {
   return window['go']['main']['App']['ListMarkdownFiles'](arg1);
 }
 
+export function ParseMarkdown(arg1) {
+  return window['go']['main']['App']['ParseMarkdown'](arg1);
+}
+
 export function ParseOutline(arg1) {
   return window['go']['main']['App']['ParseOutline'](arg1);
 }
