@@ -10,4 +10,8 @@ export function ParseOutline(arg1:string):Promise<Array<main.OutlineItem>>;
 
 export function ReadFile(arg1:string):Promise<string>;
 
+export function SaveFile(arg1:string,arg2:string):Promise<void>;
+
+export function SaveFileDialog(arg1:string):Promise<string>;
+
 export function SelectFile():Promise<string>;

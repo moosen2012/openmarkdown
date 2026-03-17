@@ -549,3 +549,103 @@ body {
     font-size: 12px;
     color: #586069;
 }
+
+/* ========== 保存按钮和历史记录样式 ========== */
+.save-btn {
+    background-color: #0969da !important;
+}
+
+.save-btn:hover:not(:disabled) {
+    background-color: #0550ae !important;
+}
+
+.save-btn:disabled {
+    background-color: #6c757d !important;
+    cursor: not-allowed;
+    opacity: 0.6;
+}
+
+.save-as-btn {
+    background-color: #6c757d !important;
+}
+
+.save-as-btn:hover {
+    background-color: #5a6268 !important;
+}
+
+.unsaved-indicator {
+    color: #e74c3c;
+    margin-left: 4px;
+    font-weight: bold;
+}
+
+.history-controls {
+    display: flex;
+    gap: 4px;
+    margin-left: 12px;
+    padding-left: 12px;
+    border-left: 1px solid #e1e4e8;
+}
+
+.status-bar-btn:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+}
+
+.status-bar-btn:disabled:hover {
+    background: none;
+    color: #586069;
+}
+
+.status-bar-item.unsaved {
+    background-color: #fff3cd;
+    color: #856404;
+}
+
+.status-bar-item.unsaved i {
+    color: #e74c3c;
+    font-size: 8px;
+}
+
+/* ========== 通知样式 ========== */
+.notification-container {
+    position: fixed;
+    top: 60px;
+    right: 16px;
+    z-index: 1000;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.notification {
+    padding: 12px 20px;
+    border-radius: 6px;
+    font-size: 14px;
+    color: white;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    animation: slideIn 0.3s ease;
+}
+
+.notification-success {
+    background-color: #28a745;
+}
+
+.notification-error {
+    background-color: #dc3545;
+}
+
+.notification-info {
+    background-color: #17a2b8;
+}
+
+@keyframes slideIn {
+    from {
+        transform: translateX(100%);
+        opacity: 0;
+    }
+    to {
+        transform: translateX(0);
+        opacity: 1;
+    }
+}

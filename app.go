@@ -8,11 +8,11 @@ import (
 	"regexp"
 	"strings"
 
+	"github.com/wailsapp/wails/v2/pkg/runtime"
 	"github.com/yuin/goldmark"
 	"github.com/yuin/goldmark/extension"
 	"github.com/yuin/goldmark/parser"
 	"github.com/yuin/goldmark/renderer/html"
-	"github.com/wailsapp/wails/v2/pkg/runtime"
 )
 
 // FileInfo 文件信息
@@ -176,4 +176,28 @@ func (a *App) ParseMarkdown(content string) (string, error) {
 		return "", err
 	}
 	return buf.String(), nil
+}
+
+// SaveFile 保存内容到指定路径
+func (a *App) SaveFile(filePath string, content string) error {
+	return os.WriteFile(filePath, []byte(content), 0644)
+}
+
+// SaveFileDialog 弹出保存文件对话框
+func (a *App) SaveFileDialog(defaultName string) (string, error) {
+	filePath, err := runtime.SaveFileDialog(a.ctx, runtime.SaveDialogOptions{
+		Title:           "保存 Markdown 文件",
+		DefaultFilename: defaultName,
+		Filters: []runtime.FileFilter{
+			{
+				DisplayName: "Markdown Files (*.md)",
+				Pattern:     "*.md",
+			},
+			{
+				DisplayName: "Text Files (*.txt)",
+				Pattern:     "*.txt",
+			},
+		},
+	})
+	return filePath, err
 }
