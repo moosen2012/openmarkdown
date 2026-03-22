@@ -243,7 +243,7 @@ function App() {
     }, [handleUndo, handleRedo, handleSave, handleSaveAs]);
 
     return (
-        <div className="container-fluid">
+        <div className="app-container">
             {/* 通知区域 */}
             <div className="notification-container">
                 {notifications.map(n => (

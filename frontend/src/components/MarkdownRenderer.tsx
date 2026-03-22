@@ -67,8 +67,13 @@ export const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({
 
   if (loading) {
     return (
-      <div className={`markdown-body ${className}`} style={{ padding: '20px', color: '#666' }}>
-        正在解析...
+      <div className={`markdown-body d-flex justify-content-center align-items-center ${className}`} style={{ minHeight: '200px' }}>
+        <div className="text-center text-muted">
+          <div className="spinner-border mb-2" role="status" style={{ width: '2rem', height: '2rem' }}>
+            <span className="visually-hidden">加载中...</span>
+          </div>
+          <p className="mb-0">正在解析 Markdown...</p>
+        </div>
       </div>
     );
   }
