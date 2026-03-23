@@ -201,3 +201,45 @@ func (a *App) SaveFileDialog(defaultName string) (string, error) {
 	})
 	return filePath, err
 }
+
+// SelectFolder opens a folder selection dialog and returns the selected folder path
+func (a *App) SelectFolder() (string, error) {
+	folderPath, err := runtime.OpenDirectoryDialog(a.ctx, runtime.OpenDialogOptions{
+		Title: "选择文件夹",
+	})
+	return folderPath, err
+}
+
+// ListFolderFiles lists all files in a folder with detailed information
+func (a *App) ListFolderFiles(folderPath string) ([]FileInfo, error) {
+	var files []FileInfo
+
+	if folderPath == "" {
+		return files, nil
+	}
+
+	entries, err := os.ReadDir(folderPath)
+	if err != nil {
+		return nil, err
+	}
+
+	for _, entry := range entries {
+		// 跳过隐藏文件和目录
+		if strings.HasPrefix(entry.Name(), ".") {
+			continue
+		}
+
+		info, err := entry.Info()
+		if err != nil {
+			continue
+		}
+
+		files = append(files, FileInfo{
+			Name:  info.Name(),
+			Path:  filepath.Join(folderPath, info.Name()),
+			IsDir: info.IsDir(),
+		})
+	}
+
+	return files, nil
+}

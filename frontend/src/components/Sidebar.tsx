@@ -20,6 +20,10 @@ interface SidebarProps {
   onFileSelect: (filePath: string) => void;
   // 可选的额外标签页
   extraTabs?: SidebarTab[];
+  // 打开的文件夹路径
+  openedFolderPath?: string;
+  // 文件夹中的文件列表
+  folderFiles?: Array<{ name: string; path: string; isDir: boolean }>;
 }
 
 type DefaultTabType = 'outline' | 'files';
@@ -30,6 +34,8 @@ const Sidebar: React.FC<SidebarProps> = ({
   markdownContent,
   onFileSelect,
   extraTabs = [],
+  openedFolderPath = '',
+  folderFiles = [],
 }) => {
   // 默认标签页
   const [activeDefaultTab, setActiveDefaultTab] = useState<DefaultTabType>('outline');
@@ -95,9 +101,19 @@ const Sidebar: React.FC<SidebarProps> = ({
     item.title.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  const filteredFiles = (files || []).filter((file) =>
+  // 优先使用打开的文件夹文件列表，否则使用当前目录的 Markdown 文件
+  const displayFiles = openedFolderPath ? folderFiles : files;
+  const filteredFiles = (displayFiles || []).filter((file) =>
     file.name.toLowerCase().includes(searchQuery.toLowerCase())
   );
+
+  // 获取文件夹名称用于显示
+  const getFolderName = () => {
+    if (openedFolderPath) {
+      return openedFolderPath.split(/[\\/]/).pop() || openedFolderPath;
+    }
+    return currentFilePath ? (currentFilePath.split(/[\\/]/).pop() || '') : '';
+  };
 
   // 处理默认标签页点击
   const handleDefaultTabClick = (tab: DefaultTabType) => {
@@ -214,6 +230,8 @@ const Sidebar: React.FC<SidebarProps> = ({
                 files={filteredFiles}
                 currentFile={currentFilePath}
                 onFileSelect={onFileSelect}
+                searchQuery={searchQuery}
+                folderName={openedFolderPath ? getFolderName() : '目录文件'}
               />
             )}
 

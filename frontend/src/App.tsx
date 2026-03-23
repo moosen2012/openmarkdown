@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { SelectFile, ReadFile, SaveFile, SaveFileDialog } from '../wailsjs/go/main/App';
+import { SelectFile, ReadFile, SaveFile, SaveFileDialog, SelectFolder, ListFolderFiles } from '../wailsjs/go/main/App';
 import { EditHistoryManager } from './hooks/useEditHistory';
 import './App.css';
 import 'highlight.js/styles/github.css';
@@ -62,6 +62,8 @@ function App() {
     const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState<boolean>(false);
     const [recentFiles, setRecentFiles] = useState<string[]>([]);
     const [isMaximised, setIsMaximised] = useState<boolean>(false);
+    const [openedFolderPath, setOpenedFolderPath] = useState<string>('');
+    const [folderFiles, setFolderFiles] = useState<Array<{ name: string; path: string; isDir: boolean }>>([]);
 
     const historyManager = useRef<EditHistoryManager>(new EditHistoryManager());
     const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -190,6 +192,31 @@ function App() {
             addToRecentFiles(filePath);
         } catch (error) {
             showNotification(`读取文件失败: ${error}`, 'error');
+        }
+    };
+
+    // 处理打开文件夹
+    const handleOpenFolder = async () => {
+        try {
+            const folderPath = await SelectFolder();
+            if (!folderPath) return;
+
+            setOpenedFolderPath(folderPath);
+            await loadFolderFiles(folderPath);
+            showNotification('文件夹打开成功', 'success');
+        } catch (error) {
+            showNotification(`打开文件夹失败: ${error}`, 'error');
+        }
+    };
+
+    // 加载文件夹文件列表
+    const loadFolderFiles = async (folderPath: string) => {
+        try {
+            const files = await ListFolderFiles(folderPath);
+            setFolderFiles(files);
+        } catch (error) {
+            showNotification(`读取文件夹内容失败: ${error}`, 'error');
+            setFolderFiles([]);
         }
     };
 
@@ -334,6 +361,7 @@ function App() {
             items: [
                 { label: '新建', shortcut: 'Ctrl+N', action: handleNewFile },
                 { label: '打开文件', shortcut: 'Ctrl+O', action: handleSelectFile },
+                { label: '打开文件夹', shortcut: 'Ctrl+Shift+O', action: handleOpenFolder },
                 { divider: true } as MenuItemType,
                 { label: '保存', shortcut: 'Ctrl+S', action: handleSave },
                 { label: '另存为', shortcut: 'Ctrl+Shift+S', action: handleSaveAs },
@@ -393,6 +421,7 @@ function App() {
     const commands: CommandItem[] = [
         { id: 'new', label: '新建文件', shortcut: 'Ctrl+N', category: '文件', icon: 'file-earmark-plus', action: handleNewFile },
         { id: 'open', label: '打开文件', shortcut: 'Ctrl+O', category: '文件', icon: 'folder2-open', action: handleSelectFile },
+        { id: 'open-folder', label: '打开文件夹', shortcut: 'Ctrl+Shift+O', category: '文件', icon: 'folder', action: handleOpenFolder },
         { id: 'save', label: '保存文件', shortcut: 'Ctrl+S', category: '文件', icon: 'save', action: handleSave },
         { id: 'save-as', label: '另存为', shortcut: 'Ctrl+Shift+S', category: '文件', icon: 'save2', action: handleSaveAs },
         { id: 'export-pdf', label: '导出为 PDF', category: '文件', icon: 'file-pdf', action: handleExportPDF },
@@ -462,7 +491,11 @@ function App() {
                         break;
                     case 'o':
                         e.preventDefault();
-                        handleSelectFile();
+                        if (e.shiftKey) {
+                            handleOpenFolder();
+                        } else {
+                            handleSelectFile();
+                        }
                         break;
                     case ',':
                         e.preventDefault();
@@ -539,6 +572,8 @@ function App() {
                     currentFilePath={currentFilePath}
                     markdownContent={markdown}
                     onFileSelect={handleSidebarFileSelect}
+                    openedFolderPath={openedFolderPath}
+                    folderFiles={folderFiles}
                 />
 
                 <div className="main-wrapper">
