@@ -26,6 +26,14 @@ const WindowToggleMaximise = () => {
     }
 };
 
+const WindowIsMaximised = async (): Promise<boolean> => {
+    const win = window as any;
+    if (win.runtime && win.runtime.WindowIsMaximised) {
+        return await win.runtime.WindowIsMaximised();
+    }
+    return false;
+};
+
 const WindowClose = () => {
     const win = window as any;
     if (win.runtime && win.runtime.Quit) {
@@ -53,6 +61,7 @@ function App() {
     const [notifications, setNotifications] = useState<Notification[]>([]);
     const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState<boolean>(false);
     const [recentFiles, setRecentFiles] = useState<string[]>([]);
+    const [isMaximised, setIsMaximised] = useState<boolean>(false);
 
     const historyManager = useRef<EditHistoryManager>(new EditHistoryManager());
     const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -122,6 +131,34 @@ function App() {
         }
     }, [markdown, currentFilePath]);
 
+    // 检测窗口最大化状态
+    useEffect(() => {
+        const checkMaximised = async () => {
+            const maximised = await WindowIsMaximised();
+            setIsMaximised(maximised);
+        };
+
+        checkMaximised();
+
+        // 监听窗口大小变化
+        const handleResize = () => {
+            checkMaximised();
+        };
+
+        window.addEventListener('resize', handleResize);
+        return () => window.removeEventListener('resize', handleResize);
+    }, []);
+
+    // 处理最大化/还原按钮点击
+    const handleToggleMaximise = useCallback(async () => {
+        WindowToggleMaximise();
+        // 延迟检测新状态
+        setTimeout(async () => {
+            const maximised = await WindowIsMaximised();
+            setIsMaximised(maximised);
+        }, 100);
+    }, []);
+
     // 新建文件
     const handleNewFile = useCallback(() => {
         // 如果有未保存的更改，可以在这里添加提示
@@ -129,6 +166,7 @@ function App() {
         setFileName('untitled.md');
         setCurrentFilePath('');
         setIsDirty(false);
+        setSourceCodeMode(true);
         historyManager.current.reset('# 新建文档\n\n开始编写...');
         updateHistoryButtons();
         showNotification('新建文档成功', 'success');
@@ -484,13 +522,13 @@ function App() {
                 </div>
                 <div className="window-controls">
                     <button className="window-btn" onClick={WindowMinimise} title="最小化">
-                        ─
+                        <i className="bi bi-dash"></i>
                     </button>
-                    <button className="window-btn" onClick={WindowToggleMaximise} title="最大化">
-                        □
+                    <button className="window-btn" onClick={handleToggleMaximise} title={isMaximised ? '还原' : '最大化'}>
+                        <i className={`bi ${isMaximised ? 'bi-fullscreen-exit' : 'bi-fullscreen'}`}></i>
                     </button>
                     <button className="window-btn close-btn" onClick={WindowClose} title="关闭">
-                        ×
+                        <i className="bi bi-x-lg"></i>
                     </button>
                 </div>
             </header>
@@ -526,11 +564,11 @@ function App() {
                     <footer className="status-bar">
                         <div className="status-bar-left">
                             <button
-                                className={`status-bar-btn ${sourceCodeMode ? 'active' : ''}`}
+                                className="status-bar-btn"
                                 onClick={toggleSourceCodeMode}
-                                title="切换源码模式"
+                                title={sourceCodeMode ? '切换到视图模式' : '切换到源码模式'}
                             >
-                                <i className="bi bi-code-slash"></i> 源码模式
+                                <i className={`bi ${sourceCodeMode ? 'bi-eye' : 'bi-code-slash'}`}></i> {sourceCodeMode ? '视图模式' : '源码模式'}
                             </button>
                             <div className="history-controls">
                                 <button

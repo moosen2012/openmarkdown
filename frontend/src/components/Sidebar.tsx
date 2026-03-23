@@ -66,9 +66,10 @@ const Sidebar: React.FC<SidebarProps> = ({
 
     try {
       const outlineItems = await ParseOutline(markdownContent);
-      setOutline(outlineItems);
+      setOutline(outlineItems || []);
     } catch (error) {
       console.error('Failed to parse outline:', error);
+      setOutline([]);
     }
   };
 
@@ -90,11 +91,11 @@ const Sidebar: React.FC<SidebarProps> = ({
   }, [activeExtraTab, extraTabs]);
 
   // 过滤数据
-  const filteredOutline = outline.filter((item) =>
+  const filteredOutline = (outline || []).filter((item) =>
     item.title.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  const filteredFiles = files.filter((file) =>
+  const filteredFiles = (files || []).filter((file) =>
     file.name.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
