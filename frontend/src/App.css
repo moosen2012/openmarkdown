@@ -442,6 +442,59 @@ body {
     font-size: 14px;
 }
 
+/* 子文件列表样式 */
+.file-sublist {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+
+/* 文件夹项样式 */
+.folder-item {
+    font-weight: 500;
+}
+
+/* 展开/收起图标 */
+.file-expand-icon {
+    font-size: 10px;
+    width: 16px;
+    height: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    color: #586069;
+    transition: transform 0.2s;
+}
+
+.file-expand-icon:hover {
+    color: #24292e;
+}
+
+/* 旋转动画 */
+@keyframes spin {
+    from {
+        transform: rotate(0deg);
+    }
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+.spin {
+    animation: spin 1s linear infinite;
+}
+
+/* 空文件夹提示 */
+.file-item-empty {
+    color: #8c959f;
+    cursor: default;
+}
+
+.file-item-empty:hover {
+    background-color: transparent;
+}
+
 /* ========== 主内容区域样式 ========== */
 .main-content {
     flex: 1;

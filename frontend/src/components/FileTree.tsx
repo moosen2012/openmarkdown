@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
+import { ListFolderFiles } from '../../wailsjs/go/main/App';
 import '../App.css';
 
 interface FileItem {
@@ -16,8 +17,10 @@ interface FileTreeProps {
 }
 
 // 获取文件图标
-const getFileIcon = (fileName: string, isDir: boolean) => {
-  if (isDir) return 'bi-folder';
+const getFileIcon = (fileName: string, isDir: boolean, isExpanded?: boolean) => {
+  if (isDir) {
+    return isExpanded ? 'bi-folder2-open' : 'bi-folder';
+  }
   
   const ext = fileName.split('.').pop()?.toLowerCase();
   switch (ext) {
@@ -63,6 +66,20 @@ const getFileIcon = (fileName: string, isDir: boolean) => {
   }
 };
 
+// 高亮搜索关键词
+const highlightText = (text: string, query: string) => {
+  if (!query) return text;
+  
+  const parts = text.split(new RegExp(`(${query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi'));
+  return parts.map((part, index) => 
+    part.toLowerCase() === query.toLowerCase() ? (
+      <mark key={index} className="search-highlight">{part}</mark>
+    ) : (
+      part
+    )
+  );
+};
+
 // 文件项组件
 const FileItemComponent: React.FC<{
   file: FileItem;
@@ -72,43 +89,93 @@ const FileItemComponent: React.FC<{
   level: number;
 }> = ({ file, currentFile, searchQuery, onFileSelect, level }) => {
   const [isExpanded, setIsExpanded] = useState(false);
+  const [children, setChildren] = useState<FileItem[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
 
-  const handleClick = () => {
+  const handleClick = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    
     if (file.isDir) {
+      if (!isExpanded && children.length === 0) {
+        // 首次展开，加载子文件
+        setIsLoading(true);
+        try {
+          const childFiles = await ListFolderFiles(file.path);
+          // 按类型排序：文件夹在前，文件在后
+          const sortedChildFiles = childFiles.sort((a, b) => {
+            if (a.isDir && !b.isDir) return -1;
+            if (!a.isDir && b.isDir) return 1;
+            return a.name.localeCompare(b.name);
+          });
+          setChildren(sortedChildFiles);
+        } catch (error) {
+          console.error('Failed to load folder contents:', error);
+        } finally {
+          setIsLoading(false);
+        }
+      }
       setIsExpanded(!isExpanded);
     } else {
       onFileSelect(file.path);
     }
   };
 
-  // 高亮搜索关键词
-  const highlightText = (text: string, query: string) => {
-    if (!query) return text;
-    
-    const parts = text.split(new RegExp(`(${query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi'));
-    return parts.map((part, index) => 
-      part.toLowerCase() === query.toLowerCase() ? (
-        <mark key={index} className="search-highlight">{part}</mark>
-      ) : (
-        part
-      )
-    );
-  };
+  // 处理子文件选择
+  const handleChildSelect = useCallback((childPath: string) => {
+    onFileSelect(childPath);
+  }, [onFileSelect]);
 
   return (
-    <li
-      className={`file-item ${file.path === currentFile ? 'active' : ''}`}
-      style={{ paddingLeft: `${level * 16 + 12}px` }}
-      onClick={handleClick}
-      title={file.path}
-    >
-      <span className="file-icon">
-        <i className={`bi ${getFileIcon(file.name, file.isDir)}`}></i>
-      </span>
-      <span className="file-name">
-        {highlightText(file.name, searchQuery)}
-      </span>
-    </li>
+    <>
+      <li
+        className={`file-item ${file.path === currentFile ? 'active' : ''} ${file.isDir ? 'folder-item' : ''}`}
+        style={{ paddingLeft: `${level * 16 + 12}px` }}
+        onClick={handleClick}
+        title={file.path}
+      >
+        {file.isDir && (
+          <span className="file-expand-icon">
+            {isLoading ? (
+              <i className="bi bi-arrow-repeat spin"></i>
+            ) : (
+              <i className={`bi bi-chevron-${isExpanded ? 'down' : 'right'}`}></i>
+            )}
+          </span>
+        )}
+        <span className="file-icon">
+          <i className={`bi ${getFileIcon(file.name, file.isDir, isExpanded)}`}></i>
+        </span>
+        <span className="file-name">
+          {highlightText(file.name, searchQuery)}
+        </span>
+      </li>
+      
+      {/* 子文件列表 */}
+      {file.isDir && isExpanded && children.length > 0 && (
+        <ul className="file-sublist">
+          {children.map((child, index) => (
+            <FileItemComponent
+              key={`${child.path}-${index}`}
+              file={child}
+              currentFile={currentFile}
+              searchQuery={searchQuery}
+              onFileSelect={handleChildSelect}
+              level={level + 1}
+            />
+          ))}
+        </ul>
+      )}
+      
+      {/* 空文件夹提示 */}
+      {file.isDir && isExpanded && !isLoading && children.length === 0 && (
+        <li 
+          className="file-item file-item-empty"
+          style={{ paddingLeft: `${(level + 1) * 16 + 12}px` }}
+        >
+          <span className="text-muted small">(空文件夹)</span>
+        </li>
+      )}
+    </>
   );
 };
 

@@ -243,3 +243,45 @@ func (a *App) ListFolderFiles(folderPath string) ([]FileInfo, error) {
 
 	return files, nil
 }
+
+// ListFolderFilesRecursive lists all files recursively in a folder with detailed information
+func (a *App) ListFolderFilesRecursive(folderPath string) ([]FileInfo, error) {
+	var files []FileInfo
+
+	if folderPath == "" {
+		return files, nil
+	}
+
+	err := filepath.Walk(folderPath, func(path string, info os.FileInfo, err error) error {
+		if err != nil {
+			return err
+		}
+
+		// 跳过根目录本身
+		if path == folderPath {
+			return nil
+		}
+
+		// 跳过隐藏文件和目录
+		if strings.HasPrefix(info.Name(), ".") {
+			if info.IsDir() {
+				return filepath.SkipDir
+			}
+			return nil
+		}
+
+		files = append(files, FileInfo{
+			Name:  info.Name(),
+			Path:  path,
+			IsDir: info.IsDir(),
+		})
+
+		return nil
+	})
+
+	if err != nil {
+		return nil, err
+	}
+
+	return files, nil
+}

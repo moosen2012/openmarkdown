@@ -6,6 +6,10 @@ export function ListFolderFiles(arg1) {
   return window['go']['main']['App']['ListFolderFiles'](arg1);
 }
 
+export function ListFolderFilesRecursive(arg1) {
+  return window['go']['main']['App']['ListFolderFilesRecursive'](arg1);
+}
+
 export function ListMarkdownFiles(arg1) {
   return window['go']['main']['App']['ListMarkdownFiles'](arg1);
 }

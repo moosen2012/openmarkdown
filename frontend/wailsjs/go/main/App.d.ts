@@ -4,6 +4,8 @@ import {main} from '../models';
 
 export function ListFolderFiles(arg1:string):Promise<Array<main.FileInfo>>;
 
+export function ListFolderFilesRecursive(arg1:string):Promise<Array<main.FileInfo>>;
+
 export function ListMarkdownFiles(arg1:string):Promise<Array<main.FileInfo>>;
 
 export function ParseMarkdown(arg1:string):Promise<string>;
