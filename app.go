@@ -15,6 +15,14 @@ import (
 	"github.com/yuin/goldmark/renderer/html"
 )
 
+// 存储命令行传入的文件路径
+var initialFilePath string
+
+// SetInitialFilePath 设置初始文件路径（由 main.go 调用）
+func SetInitialFilePath(path string) {
+	initialFilePath = path
+}
+
 // FileInfo 文件信息
 type FileInfo struct {
 	Name  string `json:"name"`
@@ -58,6 +66,11 @@ func NewApp() *App {
 // so we can call the runtime methods
 func (a *App) startup(ctx context.Context) {
 	a.ctx = ctx
+}
+
+// GetInitialFilePath 获取命令行传入的初始文件路径
+func (a *App) GetInitialFilePath() string {
+	return initialFilePath
 }
 
 // SelectFile opens a file selection dialog and returns the selected file path

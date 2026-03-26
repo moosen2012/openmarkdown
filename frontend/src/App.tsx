@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { SelectFile, ReadFile, SaveFile, SaveFileDialog, SelectFolder, ListFolderFiles } from '../wailsjs/go/main/App';
+import { SelectFile, ReadFile, SaveFile, SaveFileDialog, SelectFolder, ListFolderFiles, GetInitialFilePath } from '../wailsjs/go/main/App';
 import { EditHistoryManager } from './hooks/useEditHistory';
 import './App.css';
 import 'highlight.js/styles/github.css';
@@ -149,6 +149,31 @@ function App() {
 
         window.addEventListener('resize', handleResize);
         return () => window.removeEventListener('resize', handleResize);
+    }, []);
+
+    // 应用启动时检查是否有命令行传入的文件路径
+    useEffect(() => {
+        const openInitialFile = async () => {
+            try {
+                const initialPath = await GetInitialFilePath();
+                if (initialPath) {
+                    const name = initialPath.split(/[\\/]/).pop() || '';
+                    setFileName(name);
+                    setCurrentFilePath(initialPath);
+
+                    const content = await ReadFile(initialPath);
+                    setMarkdown(content);
+                    setIsDirty(false);
+                    historyManager.current.reset(content);
+                    updateHistoryButtons();
+                    addToRecentFiles(initialPath);
+                }
+            } catch (error) {
+                console.error('打开初始文件失败:', error);
+            }
+        };
+
+        openInitialFile();
     }, []);
 
     // 处理最大化/还原按钮点击

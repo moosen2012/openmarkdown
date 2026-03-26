@@ -43,6 +43,10 @@ export function SelectFolder(): Promise<string> {
     return $Call.ByID(1234567890);
 }
 
+export function GetInitialFilePath(): Promise<string> {
+    return $Call.ByID(9876543210);
+}
+
 export interface FileInfo {
     IsDir: boolean;
     Name: string;

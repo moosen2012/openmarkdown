@@ -2,6 +2,7 @@ package main
 
 import (
 	"embed"
+	"os"
 
 	"github.com/wailsapp/wails/v2"
 	"github.com/wailsapp/wails/v2/pkg/options"
@@ -13,6 +14,16 @@ import (
 var assets embed.FS
 
 func main() {
+	// 检查命令行参数，获取传入的文件路径
+	// 当从 Windows 资源管理器双击打开文件时，文件路径会作为参数传入
+	if len(os.Args) > 1 {
+		filePath := os.Args[1]
+		// 检查文件是否存在
+		if _, err := os.Stat(filePath); err == nil {
+			SetInitialFilePath(filePath)
+		}
+	}
+
 	// Create an instance of the app structure
 	app := NewApp()
 
