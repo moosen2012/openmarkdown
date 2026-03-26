@@ -8,6 +8,7 @@ import MarkdownRenderer from './components/MarkdownRenderer';
 import MenuBar from './components/MenuBar';
 import CommandPalette from './components/CommandPalette';
 import ContextMenu, { useContextMenu, ContextMenuItem } from './components/ContextMenu';
+import RecentPanel from './components/RecentPanel';
 import type { MenuItemType } from './components/MenuBar';
 import type { CommandItem } from './components/CommandPalette';
 
@@ -61,9 +62,53 @@ function App() {
     const [notifications, setNotifications] = useState<Notification[]>([]);
     const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState<boolean>(false);
     const [recentFiles, setRecentFiles] = useState<string[]>([]);
+    const [recentFolders, setRecentFolders] = useState<string[]>([]);
     const [isMaximised, setIsMaximised] = useState<boolean>(false);
     const [openedFolderPath, setOpenedFolderPath] = useState<string>('');
     const [folderFiles, setFolderFiles] = useState<Array<{ name: string; path: string; isDir: boolean }>>([]);
+
+    // 获取当前布局模式
+    const getLayoutMode = () => {
+        if (!currentFilePath && !openedFolderPath) return 'mode-welcome';
+        if (currentFilePath) return 'mode-file';
+        return 'mode-folder';
+    };
+
+    // 从 localStorage 加载最近文件和文件夹
+    useEffect(() => {
+        const savedRecentFiles = localStorage.getItem('recentFiles');
+        const savedRecentFolders = localStorage.getItem('recentFolders');
+        if (savedRecentFiles) {
+            try {
+                const parsed = JSON.parse(savedRecentFiles);
+                if (Array.isArray(parsed)) {
+                    setRecentFiles(parsed.slice(0, 8));
+                }
+            } catch (e) {
+                console.error('解析最近文件失败:', e);
+            }
+        }
+        if (savedRecentFolders) {
+            try {
+                const parsed = JSON.parse(savedRecentFolders);
+                if (Array.isArray(parsed)) {
+                    setRecentFolders(parsed.slice(0, 8));
+                }
+            } catch (e) {
+                console.error('解析最近文件夹失败:', e);
+            }
+        }
+    }, []);
+
+    // 保存最近文件到 localStorage
+    useEffect(() => {
+        localStorage.setItem('recentFiles', JSON.stringify(recentFiles.slice(0, 8)));
+    }, [recentFiles]);
+
+    // 保存最近文件夹到 localStorage
+    useEffect(() => {
+        localStorage.setItem('recentFolders', JSON.stringify(recentFolders.slice(0, 8)));
+    }, [recentFolders]);
 
     const historyManager = useRef<EditHistoryManager>(new EditHistoryManager());
     const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -81,12 +126,30 @@ function App() {
         }, 3000);
     }, []);
 
-    // 添加到最近文件
+    // 添加到最近文件（最多8条）
     const addToRecentFiles = useCallback((filePath: string) => {
         setRecentFiles(prev => {
             const filtered = prev.filter(f => f !== filePath);
-            return [filePath, ...filtered].slice(0, 10);
+            return [filePath, ...filtered].slice(0, 8);
         });
+    }, []);
+
+    // 添加到最近文件夹（最多8条）
+    const addToRecentFolders = useCallback((folderPath: string) => {
+        setRecentFolders(prev => {
+            const filtered = prev.filter(f => f !== folderPath);
+            return [folderPath, ...filtered].slice(0, 8);
+        });
+    }, []);
+
+    // 清除所有最近文件
+    const clearRecentFiles = useCallback(() => {
+        setRecentFiles([]);
+    }, []);
+
+    // 清除所有最近文件夹
+    const clearRecentFolders = useCallback(() => {
+        setRecentFolders([]);
     }, []);
 
     // 计算字数
@@ -228,6 +291,19 @@ function App() {
 
             setOpenedFolderPath(folderPath);
             await loadFolderFiles(folderPath);
+            addToRecentFolders(folderPath);
+            showNotification('文件夹打开成功', 'success');
+        } catch (error) {
+            showNotification(`打开文件夹失败: ${error}`, 'error');
+        }
+    };
+
+    // 打开最近文件夹
+    const handleOpenRecentFolder = async (folderPath: string) => {
+        try {
+            setOpenedFolderPath(folderPath);
+            await loadFolderFiles(folderPath);
+            addToRecentFolders(folderPath);
             showNotification('文件夹打开成功', 'success');
         } catch (error) {
             showNotification(`打开文件夹失败: ${error}`, 'error');
@@ -394,11 +470,28 @@ function App() {
                 {
                     label: '最近文件',
                     children: recentFiles.length > 0
-                        ? recentFiles.map(file => ({
-                            label: file.split(/[\\/]/).pop() || file,
-                            action: () => handleOpenRecentFile(file)
-                        }))
+                        ? [
+                            ...recentFiles.map(file => ({
+                                label: file.split(/[\\/]/).pop() || file,
+                                action: () => handleOpenRecentFile(file)
+                            })),
+                            { divider: true } as MenuItemType,
+                            { label: '清除最近文件', action: clearRecentFiles }
+                        ]
                         : [{ label: '无最近文件', disabled: true }]
+                },
+                {
+                    label: '最近文件夹',
+                    children: recentFolders.length > 0
+                        ? [
+                            ...recentFolders.map(folder => ({
+                                label: folder.split(/[\\/]/).pop() || folder,
+                                action: () => handleOpenRecentFolder(folder)
+                            })),
+                            { divider: true } as MenuItemType,
+                            { label: '清除最近文件夹', action: clearRecentFolders }
+                        ]
+                        : [{ label: '无最近文件夹', disabled: true }]
                 },
                 { divider: true } as MenuItemType,
                 { label: '导出为 PDF', action: handleExportPDF },
@@ -591,76 +684,118 @@ function App() {
                 </div>
             </header>
 
-            <div className="main-container">
-                <Sidebar
-                    expanded={sidebarExpanded}
-                    currentFilePath={currentFilePath}
-                    markdownContent={markdown}
-                    onFileSelect={handleSidebarFileSelect}
-                    openedFolderPath={openedFolderPath}
-                    folderFiles={folderFiles}
-                />
+            <div className={`main-container ${getLayoutMode()}`}>
+                {/* 默认状态：单列居中显示历史记录 */}
+                {!currentFilePath && !openedFolderPath && (
+                    <div className="welcome-layout">
+                        <RecentPanel
+                            recentFiles={recentFiles}
+                            recentFolders={recentFolders}
+                            onOpenFile={handleOpenRecentFile}
+                            onOpenFolder={handleOpenRecentFolder}
+                            onClearFiles={clearRecentFiles}
+                            onClearFolders={clearRecentFolders}
+                            isVisible={true}
+                        />
+                    </div>
+                )}
 
-                <div className="main-wrapper">
-                    <main
-                        className="main-content"
-                        onContextMenu={(e) => openContextMenu(e, getEditorContextMenuItems())}
-                    >
-                        {sourceCodeMode ? (
-                            <div className="source-code-container">
-                                <textarea
-                                    ref={textareaRef}
-                                    className="source-code-textarea"
-                                    value={markdown}
-                                    onChange={(e) => setMarkdown(e.target.value)}
-                                    spellCheck={false}
-                                />
-                            </div>
-                        ) : (
-                            <MarkdownRenderer content={markdown} />
-                        )}
-                    </main>
-
-                    <footer className="status-bar">
-                        <div className="status-bar-left">
-                            <button
-                                className="status-bar-btn"
-                                onClick={toggleSourceCodeMode}
-                                title={sourceCodeMode ? '切换到视图模式' : '切换到源码模式'}
+                {/* 打开文件时：左侧大纲，右侧内容 */}
+                {currentFilePath && (
+                    <>
+                        <Sidebar
+                            expanded={sidebarExpanded}
+                            currentFilePath={currentFilePath}
+                            markdownContent={markdown}
+                            onFileSelect={handleSidebarFileSelect}
+                            openedFolderPath=""
+                            folderFiles={[]}
+                            showDefaultTabs={true}
+                            defaultActiveTab="outline"
+                        />
+                        <div className="main-wrapper">
+                            <main
+                                className="main-content"
+                                onContextMenu={(e) => openContextMenu(e, getEditorContextMenuItems())}
                             >
-                                <i className={`bi ${sourceCodeMode ? 'bi-eye' : 'bi-code-slash'}`}></i> {sourceCodeMode ? '视图模式' : '源码模式'}
-                            </button>
-                            <div className="history-controls">
-                                <button
-                                    className="status-bar-btn"
-                                    onClick={handleUndo}
-                                    disabled={!canUndo}
-                                    title="撤销 (Ctrl+Z)"
-                                >
-                                    <i className="bi bi-arrow-counterclockwise"></i> 撤销
-                                </button>
-                                <button
-                                    className="status-bar-btn"
-                                    onClick={handleRedo}
-                                    disabled={!canRedo}
-                                    title="重做 (Ctrl+Y 或 Ctrl+Shift+Z)"
-                                >
-                                    <i className="bi bi-arrow-clockwise"></i> 重做
-                                </button>
+                                {sourceCodeMode ? (
+                                    <div className="source-code-container">
+                                        <textarea
+                                            ref={textareaRef}
+                                            className="source-code-textarea"
+                                            value={markdown}
+                                            onChange={(e) => setMarkdown(e.target.value)}
+                                            spellCheck={false}
+                                        />
+                                    </div>
+                                ) : (
+                                    <MarkdownRenderer content={markdown} />
+                                )}
+                            </main>
+                            <footer className="status-bar">
+                                <div className="status-bar-left">
+                                    <button
+                                        className="status-bar-btn"
+                                        onClick={toggleSourceCodeMode}
+                                        title={sourceCodeMode ? '切换到视图模式' : '切换到源码模式'}
+                                    >
+                                        <i className={`bi ${sourceCodeMode ? 'bi-eye' : 'bi-code-slash'}`}></i> {sourceCodeMode ? '视图模式' : '源码模式'}
+                                    </button>
+                                    <div className="history-controls">
+                                        <button
+                                            className="status-bar-btn"
+                                            onClick={handleUndo}
+                                            disabled={!canUndo}
+                                            title="撤销 (Ctrl+Z)"
+                                        >
+                                            <i className="bi bi-arrow-counterclockwise"></i> 撤销
+                                        </button>
+                                        <button
+                                            className="status-bar-btn"
+                                            onClick={handleRedo}
+                                            disabled={!canRedo}
+                                            title="重做 (Ctrl+Y 或 Ctrl+Shift+Z)"
+                                        >
+                                            <i className="bi bi-arrow-clockwise"></i> 重做
+                                        </button>
+                                    </div>
+                                </div>
+                                <div className="status-bar-right">
+                                    <span className="status-bar-item">
+                                        <i className="bi bi-file-text"></i> 字数：{wordCount}
+                                    </span>
+                                    {isDirty && (
+                                        <span className="status-bar-item unsaved">
+                                            <i className="bi bi-circle-fill"></i> 未保存
+                                        </span>
+                                    )}
+                                </div>
+                            </footer>
+                        </div>
+                    </>
+                )}
+
+                {/* 打开文件夹时：左侧文件夹结构，右侧空白 */}
+                {!currentFilePath && openedFolderPath && (
+                    <>
+                        <Sidebar
+                            expanded={sidebarExpanded}
+                            currentFilePath=""
+                            markdownContent=""
+                            onFileSelect={handleSidebarFileSelect}
+                            openedFolderPath={openedFolderPath}
+                            folderFiles={folderFiles}
+                            showDefaultTabs={true}
+                            defaultActiveTab="files"
+                        />
+                        <div className="main-wrapper empty-content">
+                            <div className="empty-state">
+                                <i className="bi bi-folder2-open fs-1 text-muted mb-3"></i>
+                                <p className="text-muted">请从左侧选择文件打开</p>
                             </div>
                         </div>
-                        <div className="status-bar-right">
-                            <span className="status-bar-item">
-                                <i className="bi bi-file-text"></i> 字数：{wordCount}
-                            </span>
-                            {isDirty && (
-                                <span className="status-bar-item unsaved">
-                                    <i className="bi bi-circle-fill"></i> 未保存
-                                </span>
-                            )}
-                        </div>
-                    </footer>
-                </div>
+                    </>
+                )}
             </div>
         </div>
     );
