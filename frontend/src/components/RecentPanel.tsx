@@ -5,22 +5,29 @@ interface RecentPanelProps {
   recentFiles: string[];
   recentFolders: string[];
   onOpenFile: (path: string) => void;
-  onOpenFolder: (path: string) => void;
+  onOpenRecentFolder: (path: string) => void;
   onClearFiles: () => void;
   onClearFolders: () => void;
   isVisible: boolean;
   centered?: boolean;
+  // 新增快捷操作回调
+  onNewFile?: () => void;
+  onSelectFile?: () => void;
+  onOpenFolder?: () => void;
 }
 
 const RecentPanel: React.FC<RecentPanelProps> = ({
   recentFiles,
   recentFolders,
   onOpenFile,
-  onOpenFolder,
+  onOpenRecentFolder,
   onClearFiles,
   onClearFolders,
   isVisible,
   centered = false,
+  onNewFile,
+  onSelectFile,
+  onOpenFolder,
 }) => {
   if (!isVisible) return null;
 
@@ -41,6 +48,27 @@ const RecentPanel: React.FC<RecentPanelProps> = ({
       </div>
 
       <div className="recent-panel-content">
+        {/* 快捷操作区域 */}
+        {centered && (
+          <div className="quick-actions">
+            <button className="quick-action-btn primary" onClick={onNewFile}>
+              <i className="bi bi-file-earmark-plus"></i>
+              <span>新建文件</span>
+              <kbd>Ctrl+N</kbd>
+            </button>
+            <button className="quick-action-btn" onClick={onSelectFile}>
+              <i className="bi bi-folder-open"></i>
+              <span>打开文件</span>
+              <kbd>Ctrl+O</kbd>
+            </button>
+            <button className="quick-action-btn" onClick={onOpenFolder}>
+              <i className="bi bi-folder2-open"></i>
+              <span>打开文件夹</span>
+              <kbd>Ctrl+Shift+O</kbd>
+            </button>
+          </div>
+        )}
+
         {/* 最近文件 */}
         <div className="recent-section">
           <div className="recent-section-header">
@@ -82,9 +110,6 @@ const RecentPanel: React.FC<RecentPanelProps> = ({
                       <span className="recent-item-name">{name}</span>
                       <span className="recent-item-path">{dir}</span>
                     </div>
-                    <div className="recent-item-action">
-                      <i className="bi bi-chevron-right"></i>
-                    </div>
                   </li>
                 );
               })}
@@ -123,7 +148,7 @@ const RecentPanel: React.FC<RecentPanelProps> = ({
                   <li
                     key={`${folder}-${index}`}
                     className="recent-item"
-                    onClick={() => onOpenFolder(folder)}
+                    onClick={() => onOpenRecentFolder(folder)}
                     title={folder}
                   >
                     <div className="recent-item-icon folder">
@@ -132,9 +157,6 @@ const RecentPanel: React.FC<RecentPanelProps> = ({
                     <div className="recent-item-info">
                       <span className="recent-item-name">{name}</span>
                       <span className="recent-item-path">{dir}</span>
-                    </div>
-                    <div className="recent-item-action">
-                      <i className="bi bi-chevron-right"></i>
                     </div>
                   </li>
                 );

@@ -66,11 +66,13 @@ function App() {
     const [isMaximised, setIsMaximised] = useState<boolean>(false);
     const [openedFolderPath, setOpenedFolderPath] = useState<string>('');
     const [folderFiles, setFolderFiles] = useState<Array<{ name: string; path: string; isDir: boolean }>>([]);
+    // 标记是否有新建的文件（用于区分欢迎页面和新建文件状态）
+    const [hasNewFile, setHasNewFile] = useState<boolean>(false);
 
     // 获取当前布局模式
     const getLayoutMode = () => {
-        if (!currentFilePath && !openedFolderPath) return 'mode-welcome';
-        if (currentFilePath) return 'mode-file';
+        if (!currentFilePath && !openedFolderPath && !hasNewFile) return 'mode-welcome';
+        if (currentFilePath || hasNewFile) return 'mode-file';
         return 'mode-folder';
     };
 
@@ -257,6 +259,7 @@ function App() {
         setCurrentFilePath('');
         setIsDirty(false);
         setSourceCodeMode(true);
+        setHasNewFile(true); // 标记为新建文件状态
         historyManager.current.reset('# 新建文档\n\n开始编写...');
         updateHistoryButtons();
         showNotification('新建文档成功', 'success');
@@ -271,6 +274,7 @@ function App() {
             const name = filePath.split(/[\\/]/).pop() || '';
             setFileName(name);
             setCurrentFilePath(filePath);
+            setHasNewFile(false); // 重置新建文件状态
 
             const content = await ReadFile(filePath);
             setMarkdown(content);
@@ -290,6 +294,7 @@ function App() {
             if (!folderPath) return;
 
             setOpenedFolderPath(folderPath);
+            setHasNewFile(false); // 重置新建文件状态
             await loadFolderFiles(folderPath);
             addToRecentFolders(folderPath);
             showNotification('文件夹打开成功', 'success');
@@ -302,6 +307,7 @@ function App() {
     const handleOpenRecentFolder = async (folderPath: string) => {
         try {
             setOpenedFolderPath(folderPath);
+            setHasNewFile(false); // 重置新建文件状态
             await loadFolderFiles(folderPath);
             addToRecentFolders(folderPath);
             showNotification('文件夹打开成功', 'success');
@@ -327,6 +333,7 @@ function App() {
             const name = filePath.split(/[\\/]/).pop() || '';
             setFileName(name);
             setCurrentFilePath(filePath);
+            setHasNewFile(false); // 重置新建文件状态
 
             const content = await ReadFile(filePath);
             setMarkdown(content);
@@ -345,6 +352,7 @@ function App() {
             const name = filePath.split(/[\\/]/).pop() || '';
             setFileName(name);
             setCurrentFilePath(filePath);
+            setHasNewFile(false); // 重置新建文件状态
 
             const content = await ReadFile(filePath);
             setMarkdown(content);
@@ -686,22 +694,26 @@ function App() {
 
             <div className={`main-container ${getLayoutMode()}`}>
                 {/* 默认状态：单列居中显示历史记录 */}
-                {!currentFilePath && !openedFolderPath && (
+                {!currentFilePath && !openedFolderPath && !hasNewFile && (
                     <div className="welcome-layout">
                         <RecentPanel
                             recentFiles={recentFiles}
                             recentFolders={recentFolders}
                             onOpenFile={handleOpenRecentFile}
-                            onOpenFolder={handleOpenRecentFolder}
+                            onOpenRecentFolder={handleOpenRecentFolder}
                             onClearFiles={clearRecentFiles}
                             onClearFolders={clearRecentFolders}
                             isVisible={true}
+                            centered={true}
+                            onNewFile={handleNewFile}
+                            onSelectFile={handleSelectFile}
+                            onOpenFolder={handleOpenFolder}
                         />
                     </div>
                 )}
 
-                {/* 打开文件时：左侧大纲，右侧内容 */}
-                {currentFilePath && (
+                {/* 打开文件或新建文件时：左侧大纲，右侧内容 */}
+                {(currentFilePath || hasNewFile) && (
                     <>
                         <Sidebar
                             expanded={sidebarExpanded}
